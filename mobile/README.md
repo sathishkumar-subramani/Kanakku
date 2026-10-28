@@ -88,9 +88,8 @@ eas login                 # free Expo account
 - `production` — APK as well, same settings
 - `development` — dev client (not needed)
 
-**TODO: set your Render URL** in `eas.json` before building. Replace both occurrences of
-`https://REPLACE-ME.onrender.com/api` with your real API URL, e.g.
-`https://kanakku-api.onrender.com/api`.
+`eas.json` already points both profiles at the live API: `https://kanakku-api.onrender.com/api`.
+(If you ever move the API, change `EXPO_PUBLIC_API_URL` there and rebuild.)
 
 Then:
 

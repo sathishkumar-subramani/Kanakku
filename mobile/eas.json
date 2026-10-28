@@ -13,14 +13,14 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-ME.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://kanakku-api.onrender.com/api"
       }
     },
     "production": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-ME.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://kanakku-api.onrender.com/api"
       }
     }
   },
