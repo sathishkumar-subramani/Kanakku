@@ -1,0 +1,152 @@
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource/dm-mono/400.css';
+@import '@fontsource/dm-mono/500.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --surface2: #efece4;
+  --border: #e3dfd5;
+  --text: #1b1c24;
+  --muted: #6c6f7c;
+  --accent: #e2590b;
+  --accent-soft: #fdebdd;
+  --on-accent: #ffffff;
+  --positive: #1d8f62;
+  --positive-soft: #dff4ea;
+  --negative: #cf3e38;
+  --negative-soft: #fbe4e2;
+  --info: #2f6fed;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1116;
+  --surface: #171a22;
+  --surface2: #20242e;
+  --border: #2b303c;
+  --text: #f1efe8;
+  --muted: #9a9eac;
+  --accent: #ff8a3d;
+  --accent-soft: #3a2416;
+  --on-accent: #1b1c24;
+  --positive: #3dcb8e;
+  --positive-soft: #15382a;
+  --negative: #ff6b61;
+  --negative-soft: #3f1f1d;
+  --info: #6b9cff;
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--muted);
+    opacity: 0.8;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-card shadow-card;
+  }
+  .field {
+    @apply w-full bg-surface2 border border-transparent rounded-field px-3.5 py-2.5 text-[15px] outline-none transition;
+  }
+  .field:focus {
+    @apply border-accent bg-surface;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .field-label {
+    @apply block text-[13px] font-medium text-muted mb-1.5;
+  }
+  .money {
+    @apply font-mono tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium border border-border bg-surface2 transition select-none;
+  }
+  .chip-active {
+    @apply border-accent bg-accent-soft text-ink;
+  }
+  .tab {
+    @apply px-3.5 py-2 text-[14px] font-medium rounded-full text-muted transition;
+  }
+  .tab-active {
+    @apply bg-accent-soft text-ink;
+  }
+  .ghost-row {
+    @apply flex items-center gap-3 px-3 py-3 rounded-field transition hover:bg-surface2;
+  }
+}
+
+/* subtle entrances */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.2s ease-out both;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.pop {
+  animation: pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* recharts tweaks */
+.recharts-default-tooltip {
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+.recharts-tooltip-label {
+  color: var(--muted) !important;
+}

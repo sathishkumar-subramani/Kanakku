@@ -1,0 +1,27 @@
+# Local run with MongoDB included:  docker compose up --build
+# API → http://localhost:5080
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "5080:5080"
+    environment:
+      PORT: "5080"
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: kanakku
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-please-change-me-0123456789abcdef}
+      CLIENT_ORIGINS: ""
+
+volumes:
+  mongo-data:

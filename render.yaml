@@ -1,0 +1,25 @@
+# Render Blueprint – deploys the Kanakku API (Node / Express).
+# Dashboard → New → Blueprint → pick this repo. Render reads this file.
+services:
+  - type: web
+    name: kanakku-api
+    runtime: node
+    plan: free
+    rootDir: api
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false            # paste your MongoDB Atlas connection string in the Render dashboard
+      - key: MONGODB_DB
+        value: kanakku
+      - key: JWT_SECRET
+        generateValue: true    # Render generates a long random secret
+      - key: CLIENT_ORIGINS
+        value: ""              # empty = allow any origin; or "https://kanakku.vercel.app,https://*.vercel.app"

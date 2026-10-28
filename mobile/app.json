@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Kanakku",
+    "slug": "kanakku",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "kanakku",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F6F4EE",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sathish.kanakku"
+    },
+    "android": {
+      "package": "com.sathish.kanakku",
+      "adaptiveIcon": {
+        "backgroundColor": "#E2590B",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F6F4EE",
+          "dark": {
+            "backgroundColor": "#0F1116"
+          }
+        }
+      ],
+      "expo-font",
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

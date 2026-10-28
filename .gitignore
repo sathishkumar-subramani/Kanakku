@@ -1,0 +1,21 @@
+# node
+node_modules/
+dist/
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# dotnet
+api/bin/
+api/obj/
+*.user
+.vs/
+
+# env & secrets
+.env
+.env.local
+*.local
+
+# os
+.DS_Store
+Thumbs.db
