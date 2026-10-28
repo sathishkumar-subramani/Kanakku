@@ -7,18 +7,27 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk",
+        "image": "latest"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk",
+        "image": "latest"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://kanakku-api.onrender.com/api"
       }
     },
     "production": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk",
+        "image": "latest"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://kanakku-api.onrender.com/api"
       }
