@@ -8,6 +8,7 @@ import { config } from './config.js'
 import { errorHandler, notFoundHandler } from './lib/errors.js'
 import { logger } from './lib/logger.js'
 import { authRouter, usersRouter } from './routes/auth.js'
+import { captureRouter } from './routes/capture.js'
 import { dashboardRouter, reportsRouter } from './routes/dashboard.js'
 import { expensesRouter, groupExpensesRouter } from './routes/expenses.js'
 import { groupsRouter } from './routes/groups.js'
@@ -70,6 +71,7 @@ export function createApp() {
     rateLimit({ windowMs, limit, standardHeaders: 'draft-7', legacyHeaders: false, skip: () => config.isTest, message: { status: 429, title: 'Too many requests', detail: 'Too many attempts. Please wait a few minutes and try again.', errors: null } })
   app.use('/api/auth/login', limiter(15 * 60_000, 30))
   app.use('/api/auth/register', limiter(60 * 60_000, 20))
+  app.use('/api/capture/templates', limiter(60 * 60_000, 120))
 
   app.use('/api/auth', authRouter)
   app.use('/api/users', usersRouter)
@@ -78,6 +80,7 @@ export function createApp() {
   app.use('/api/groups/:id/settlements', groupSettlementsRouter)
   app.use('/api/expenses', expensesRouter)
   app.use('/api/settlements', settlementsRouter)
+  app.use('/api/capture', captureRouter)
   app.use('/api/personal', personalRouter)
   app.use('/api/dashboard', dashboardRouter)
   app.use('/api/reports', reportsRouter)

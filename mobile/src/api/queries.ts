@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@ta
 
 import { useAuthStore } from '@/store/auth';
 import { authApi } from './auth';
+import { captureApi } from './capture';
 import { dashboardApi } from './dashboard';
 import { expensesApi } from './expenses';
 import { groupsApi } from './groups';
@@ -10,6 +11,7 @@ import { reportsApi } from './reports';
 import { settlementsApi } from './settlements';
 import type {
   ChangePasswordInput,
+  CaptureRuleInput,
   CreateGroupInput,
   Expense,
   ExpenseInput,
@@ -40,6 +42,8 @@ export const qk = {
   personal: (month?: MonthString) => ['personal', month ?? 'all'] as const,
   reportMonths: ['reports', 'months'] as const,
   lookup: (email: string) => ['users', 'lookup', email] as const,
+  captureRules: ['capture', 'rules'] as const,
+  smsTemplates: ['capture', 'templates'] as const,
 };
 
 function useSignedIn() {
@@ -345,4 +349,31 @@ export function useDeletePersonal() {
 export function useReportMonths() {
   const enabled = useSignedIn();
   return useQuery({ queryKey: qk.reportMonths, queryFn: () => reportsApi.months(), enabled });
+}
+
+// ---------- Payment capture ----------
+export function useCaptureRules() {
+  const enabled = useSignedIn();
+  return useQuery({ queryKey: qk.captureRules, queryFn: () => captureApi.rules(), enabled, staleTime: 5 * 60_000 });
+}
+
+export function useSmsTemplates() {
+  const enabled = useSignedIn();
+  return useQuery({ queryKey: qk.smsTemplates, queryFn: () => captureApi.templates(), enabled, staleTime: 24 * 60 * 60_000 });
+}
+
+export function useSaveCaptureRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CaptureRuleInput) => captureApi.saveRule(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.captureRules }),
+  });
+}
+
+export function useDeleteCaptureRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => captureApi.deleteRule(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.captureRules }),
+  });
 }

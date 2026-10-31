@@ -1,11 +1,13 @@
 import { Tabs } from 'expo-router/js-tabs';
 import React from 'react';
 
+import { useCaptureSync } from '@/capture/useCaptureSync';
 import { TabBar } from '@/components/TabBar';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function TabsLayout() {
   const t = useTheme();
+  useCaptureSync();
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}

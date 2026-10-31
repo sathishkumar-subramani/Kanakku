@@ -107,6 +107,9 @@ function Root({ ready }: { ready: boolean }) {
           <Stack.Screen name="more/profile" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="more/password" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="more/reports" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="more/capture" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="capture/index" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="capture/[key]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         </Stack.Protected>
       </Stack>
     </NavThemeProvider>

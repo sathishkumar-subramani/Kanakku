@@ -98,6 +98,7 @@ Expense = {
   paidBy: { id, name, avatarColor },
   splitType, splits: Split[],
   myShare,                // my split amount (0 if not included)
+  sourceRef,              // capture key when added from a bank SMS / payment notification, else null
   createdBy, createdAt, updatedAt
 }
 ```
@@ -116,28 +117,29 @@ ExpenseInput = {
   description, amount, category, date, notes?,
   paidBy: userId,
   splitType,
-  splits: [{ userId, value }]   // members included in the split. equal: value ignored; exact: rupees (must sum to amount); percent: must sum to 100; shares: positive integers
+  splits: [{ userId, value }],  // members included in the split. equal: value ignored; exact: rupees (must sum to amount); percent: must sum to 100; shares: positive integers
+  sourceRef?                    // create only; kept on edit. 409 if the group already has an expense with this sourceRef
 }
 ```
 
 ## Settlements
 
 ```ts
-Settlement = { id, groupId, from: { id, name, avatarColor }, to: { id, name, avatarColor }, amount, date, note, createdBy, createdAt }
+Settlement = { id, groupId, from: { id, name, avatarColor }, to: { id, name, avatarColor }, amount, date, note, sourceRef, createdBy, createdAt }
 ```
 
 | GET | `/groups/{id}/settlements` | – | newest first |
-| POST | `/groups/{id}/settlements` | `{ fromUserId, toUserId, amount, date?, note? }` | records "from paid to" |
+| POST | `/groups/{id}/settlements` | `{ fromUserId, toUserId, amount, date?, note?, sourceRef? }` | records "from paid to". 409 if the group already has this sourceRef (payer's and receiver's SMS share the UPI ref) |
 | DELETE | `/settlements/{id}` | – | any member |
 
 ## Personal expenses (not shared with anyone)
 
 ```ts
-PersonalExpense = { id, description, amount, category, date, notes, createdAt, updatedAt }
+PersonalExpense = { id, description, amount, category, date, notes, sourceRef, createdAt, updatedAt }
 ```
 
 | GET | `/personal?month=YYYY-MM` | – | `PersonalExpense[]` newest first (month optional) |
-| POST | `/personal` | `{ description, amount, category, date, notes? }` | |
+| POST | `/personal` | `{ description, amount, category, date, notes?, sourceRef? }` | 409 if I already have this sourceRef |
 | PUT | `/personal/{id}` | same | |
 | DELETE | `/personal/{id}` | – | |
 
@@ -171,6 +173,33 @@ Dashboard = {
 `groupId` optional: omit for everything (all groups + personal), `personal` for personal only, or a group id.
 
 The PDF contains: summary (total, my share, I paid, personal), spend by group, spend by category, every expense of the month (date, group, description, category, paid by, total, my share), settlements of the month, and the closing balances per group.
+
+## Payment capture (phone inbox)
+
+The Android app reads bank SMS and UPI-app notifications **on the phone** and parses them locally.
+Raw messages never reach the API — only capture keys, the user's filing rules and anonymous format hints.
+
+```ts
+CaptureKey = "ref:<UPI RRN / ref no>" | "h:<source>:<sender>:<direction>:<amount>:<minute>"   // same payment → same key on every phone
+CaptureRule = {
+  id, key,                 // lower-cased VPA ("annachi@ybl") or "name:<normalised payee name>"
+  label, kind: "personal" | "group" | "settlement" | "ignore",
+  groupId, category, description,
+  splitWith: userId[],     // group: empty = everyone
+  counterpartyUserId,      // settlement: the roommate on the other side
+  autoSave, updatedAt
+}
+SmsTemplate = { senderKey, direction: "debit" | "credit", amountBefore, payeeBefore?, payeeAfter?, uses }
+```
+
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| POST | `/capture/match` | `{ keys: CaptureKey[] }` (≤1000) | `{ recorded: { [key]: { kind: "personal" \| "expense" \| "settlement", id, groupId } } }` — my personal entries + anything in my groups |
+| GET | `/capture/rules` | – | my rules, newest first |
+| PUT | `/capture/rules` | `CaptureRule` without id (upsert by key) | group/settlement rules are checked against group membership |
+| DELETE | `/capture/rules/{id}` | – | |
+| GET | `/capture/templates` | – | top 500 shared "teach once" hints |
+| POST | `/capture/templates` | `SmsTemplate` without uses | upsert, `uses += 1`; anchors ≤40 chars and **no digits** (so no amounts / account numbers) |
 
 ## Health
 

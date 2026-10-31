@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Read bank transaction SMS from the inbox. Asked at runtime, only when the user turns the feature on. -->
+  <uses-permission android:name="android.permission.READ_SMS" />
+
+  <application>
+    <!-- Sees payment notifications from GPay / PhonePe / Paytm / BHIM… only after the user grants
+         "Notification access" in Android settings. Other apps' notifications are ignored. -->
+    <service
+      android:name="expo.modules.kanakkucapture.PaymentNotificationService"
+      android:label="Kanakku payment capture"
+      android:exported="true"
+      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>

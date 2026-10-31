@@ -71,9 +71,11 @@ groupExpensesRouter.get('/', query(schemas.expenseQuery), async (req, res) => {
 groupExpensesRouter.post('/', body(schemas.expense), async (req, res) => {
   const group = await requireMember(req.params.id, req.userId)
   checkPeople(req.body, group)
+  const sourceRef = req.body.sourceRef || null
+  if (sourceRef && (await Expense.exists({ groupId: group._id, sourceRef }))) throw ApiError.conflict('This payment is already added to the group.')
   const actor = await requireUser(req.userId)
   const now = new Date()
-  const expense = (await Expense.create({ groupId: group._id, ...fieldsFrom(req.body, group), createdBy: actor._id, createdAt: now, updatedAt: now })).toObject()
+  const expense = (await Expense.create({ groupId: group._id, ...fieldsFrom(req.body, group), sourceRef, createdBy: actor._id, createdAt: now, updatedAt: now })).toObject()
   await logActivity(group._id, actor, 'expense.added', `${actor.name} added "${expense.description}" for ${money(expense.amount, group.currency)}`, expense._id)
   const users = await usersById(memberIds(group))
   res.status(201).json(expenseDto(expense, group, users, req.userId))

@@ -3,27 +3,38 @@ import { Alert } from 'react-native';
 
 import { errorMessage, reportsApi } from '@/api';
 import type { MonthString, ReportFormat } from '@/api/types';
-import { saveAndShare } from '@/utils/files';
+import { handleReport, type ReportAction } from '@/utils/files';
 import { hapticError, hapticSuccess } from '@/utils/misc';
 
-/** Fetches the monthly report and hands it to the share sheet. */
+const keyOf = (month: MonthString, format: ReportFormat, groupId: string | undefined, action: ReportAction) =>
+  `${month}:${format}:${groupId ?? 'all'}:${action}`;
+
+/**
+ * Fetches a monthly report. `action` 'open' shows it in the phone's viewer (falls back to share
+ * when no viewer is installed); 'share' goes straight to the share sheet.
+ */
 export function useDownloadReport() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
-  const download = useCallback(async (month: MonthString, format: ReportFormat, groupId?: string) => {
-    const key = `${month}:${format}:${groupId ?? 'all'}`;
-    setBusyKey(key);
+  const download = useCallback(async (month: MonthString, format: ReportFormat, groupId?: string, action: ReportAction = 'open') => {
+    setBusyKey(keyOf(month, format, groupId, action));
     try {
       const file = await reportsApi.monthly(month, format, groupId);
-      await saveAndShare(file);
+      await handleReport(file, action);
       hapticSuccess();
     } catch (err) {
       hapticError();
-      Alert.alert("Couldn't download the report", errorMessage(err));
+      Alert.alert("Couldn't get the report", errorMessage(err));
     } finally {
       setBusyKey(null);
     }
   }, []);
 
-  return { download, busyKey, isBusy: (month: MonthString, format: ReportFormat, groupId?: string) => busyKey === `${month}:${format}:${groupId ?? 'all'}` };
+  const share = useCallback((month: MonthString, format: ReportFormat, groupId?: string) => download(month, format, groupId, 'share'), [download]);
+
+  return {
+    download,
+    share,
+    isBusy: (month: MonthString, format: ReportFormat, groupId?: string, action: ReportAction = 'open') => busyKey === keyOf(month, format, groupId, action),
+  };
 }

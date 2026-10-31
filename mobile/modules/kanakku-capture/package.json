@@ -1,0 +1,6 @@
+{
+  "name": "kanakku-capture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reads bank SMS and payment-app notifications on the phone for Kanakku's payment inbox."
+}

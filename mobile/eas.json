@@ -20,7 +20,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://kanakku-api.onrender.com/api"
-      }
+      },
+      "autoIncrement": true
     },
     "production": {
       "distribution": "internal",
@@ -30,7 +31,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://kanakku-api.onrender.com/api"
-      }
+      },
+      "autoIncrement": true
     }
   },
   "submit": {

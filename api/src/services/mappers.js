@@ -39,6 +39,7 @@ export function expenseDto(e, group, users, me) {
       return { userId: p.id, name: p.name, avatarColor: p.avatarColor, amount: sp.amount, value: sp.value ?? 0 }
     }),
     myShare: shareOf(e, me),
+    sourceRef: e.sourceRef ?? null,
     createdBy: String(e.createdBy),
     createdAt: e.createdAt,
     updatedAt: e.updatedAt,
@@ -77,6 +78,7 @@ export const settlementDto = (st, users) => ({
   amount: st.amount,
   date: dayKey(st.date),
   note: st.note ?? null,
+  sourceRef: st.sourceRef ?? null,
   createdBy: String(st.createdBy),
   createdAt: st.createdAt,
 })
@@ -88,6 +90,7 @@ export const personalDto = (p) => ({
   category: p.category,
   date: dayKey(p.date),
   notes: p.notes ?? null,
+  sourceRef: p.sourceRef ?? null,
   createdAt: p.createdAt,
   updatedAt: p.updatedAt,
 })

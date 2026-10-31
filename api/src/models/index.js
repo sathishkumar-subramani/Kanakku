@@ -86,10 +86,12 @@ const expenseSchema = new Schema(
     createdBy: { type: ObjectId, required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
+    sourceRef: { type: String, default: null }, // capture key ("ref:<UPI RRN>" …) when added from a bank SMS / payment notification
   },
   opts(),
 )
 expenseSchema.index({ groupId: 1, date: -1 })
+expenseSchema.index({ sourceRef: 1 }, { partialFilterExpression: { sourceRef: { $type: 'string' } } })
 
 // ---------- settlements ----------
 
@@ -103,10 +105,12 @@ const settlementSchema = new Schema(
     note: { type: String, default: null },
     createdBy: { type: ObjectId, required: true },
     createdAt: { type: Date, default: Date.now },
+    sourceRef: { type: String, default: null },
   },
   opts(),
 )
 settlementSchema.index({ groupId: 1, date: -1 })
+settlementSchema.index({ sourceRef: 1 }, { partialFilterExpression: { sourceRef: { $type: 'string' } } })
 
 // ---------- personal expenses ----------
 
@@ -120,10 +124,53 @@ const personalExpenseSchema = new Schema(
     notes: { type: String, default: null },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
+    sourceRef: { type: String, default: null },
   },
   opts(),
 )
 personalExpenseSchema.index({ userId: 1, date: -1 })
+personalExpenseSchema.index({ userId: 1, sourceRef: 1 }, { partialFilterExpression: { sourceRef: { $type: 'string' } } })
+
+// ---------- payment capture ----------
+
+// "When I pay <payee>, file it like this" — learned on the phone from the user's own choices.
+const captureRuleSchema = new Schema(
+  {
+    userId: { type: ObjectId, required: true },
+    key: { type: String, required: true }, // lower-cased VPA, or "name:<normalised payee name>"
+    label: { type: String, default: '' },
+    kind: { type: String, enum: ['personal', 'group', 'settlement', 'ignore'], required: true },
+    groupId: { type: ObjectId, default: null },
+    category: { type: String, default: null },
+    description: { type: String, default: null },
+    splitWith: { type: [ObjectId], default: [] }, // empty = everyone in the group
+    counterpartyUserId: { type: ObjectId, default: null }, // settlements: the roommate on the other side
+    autoSave: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  opts(),
+)
+captureRuleSchema.index({ userId: 1, key: 1 }, { unique: true })
+
+// "Teach once" hints for bank SMS formats the generic parser can't read. Shared by everyone, and
+// they hold only the few words around the amount / payee — never amounts, names or account numbers.
+const smsTemplateSchema = new Schema(
+  {
+    senderKey: { type: String, required: true },
+    direction: { type: String, enum: ['debit', 'credit'], required: true },
+    amountBefore: { type: String, required: true },
+    payeeBefore: { type: String, default: null },
+    payeeAfter: { type: String, default: null },
+    uses: { type: Number, default: 1 },
+    createdBy: { type: ObjectId, required: true },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  opts(),
+)
+smsTemplateSchema.index({ senderKey: 1, direction: 1, amountBefore: 1, payeeBefore: 1, payeeAfter: 1 }, { unique: true })
+smsTemplateSchema.index({ uses: -1 })
 
 // ---------- activity ----------
 
@@ -148,5 +195,7 @@ export const Expense = mongoose.model('Expense', expenseSchema, 'expenses')
 export const Settlement = mongoose.model('Settlement', settlementSchema, 'settlements')
 export const PersonalExpense = mongoose.model('PersonalExpense', personalExpenseSchema, 'personalExpenses')
 export const Activity = mongoose.model('Activity', activitySchema, 'activities')
+export const CaptureRule = mongoose.model('CaptureRule', captureRuleSchema, 'captureRules')
+export const SmsTemplate = mongoose.model('SmsTemplate', smsTemplateSchema, 'smsTemplates')
 
 export { Types }

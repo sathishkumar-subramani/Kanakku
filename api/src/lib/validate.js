@@ -30,6 +30,10 @@ export const hexColor = z.string().trim().refine(isHexColor, 'Colour must look l
 export const email = z.string({ error: 'Email is required.' }).trim().toLowerCase().pipe(z.email('Enter a valid email address.')).pipe(z.string().max(120, 'Email is too long.'))
 export const password = z.string({ error: 'Password is required.' }).min(6, 'Password must be at least 6 characters.').max(100)
 export const notes = z.string().trim().max(500, 'Notes must be at most 500 characters.').optional().nullable()
+/** Capture key of the bank SMS / notification an entry came from ("ref:430512345678", "h:sms:HDFCBK:…"). */
+export const sourceRef = z.string().trim().min(3).max(120).regex(/^[\w:.@\-]+$/, 'sourceRef has unexpected characters.').optional().nullable()
+/** Words around the amount / payee in a taught SMS format: short, and never digits (no amounts, no account numbers). */
+const anchor = z.string().trim().min(1).max(40).refine((s) => !/\d/.test(s), 'Template anchors must not contain digits.')
 
 // ---------- schemas ----------
 
@@ -69,6 +73,7 @@ export const schemas = {
     paidBy: objectId('paidBy'),
     splitType: z.enum(SPLIT_TYPES, { error: 'Split type must be equal, exact, percent or shares.' }),
     splits: z.array(z.object({ userId: objectId('userId'), value: z.coerce.number().default(0) })).min(1, 'Select at least one person to split with.'),
+    sourceRef,
   }),
   expenseQuery: z.object({
     month: month.optional(),
@@ -84,9 +89,30 @@ export const schemas = {
     amount,
     date: day.optional(),
     note: z.string().trim().max(300).optional().nullable(),
+    sourceRef,
   }),
 
-  personal: z.object({ description: trimmed(1, 120, 'Description'), amount, category, date: day, notes }),
+  personal: z.object({ description: trimmed(1, 120, 'Description'), amount, category, date: day, notes, sourceRef }),
+
+  captureMatch: z.object({ keys: z.array(z.string().trim().min(1).max(120)).max(1000, 'At most 1000 keys at a time.') }),
+  captureRule: z.object({
+    key: z.string().trim().toLowerCase().min(2).max(140),
+    label: z.string().trim().max(80).optional().default(''),
+    kind: z.enum(['personal', 'group', 'settlement', 'ignore'], { error: 'Kind must be personal, group, settlement or ignore.' }),
+    groupId: objectId('groupId').optional().nullable(),
+    category: category.optional().nullable(),
+    description: z.string().trim().max(120).optional().nullable(),
+    splitWith: z.array(objectId('userId')).max(50).optional().default([]),
+    counterpartyUserId: objectId('counterpartyUserId').optional().nullable(),
+    autoSave: z.boolean().optional().default(false),
+  }),
+  smsTemplate: z.object({
+    senderKey: z.string().trim().toUpperCase().regex(/^[A-Z0-9._-]{2,40}$/, 'senderKey looks wrong.'),
+    direction: z.enum(['debit', 'credit']),
+    amountBefore: anchor,
+    payeeBefore: anchor.optional().nullable(),
+    payeeAfter: anchor.optional().nullable(),
+  }),
   monthQuery: z.object({ month: month.optional() }),
   reportQuery: z.object({ month: month.optional(), groupId: z.string().optional(), format: z.enum(['pdf', 'csv']).default('pdf') }),
   limitQuery: z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) }),

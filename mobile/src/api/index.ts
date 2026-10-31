@@ -8,4 +8,5 @@ export { settlementsApi } from './settlements';
 export { personalApi } from './personal';
 export { dashboardApi } from './dashboard';
 export { reportsApi } from './reports';
+export { captureApi } from './capture';
 export type { ReportFile } from './reports';

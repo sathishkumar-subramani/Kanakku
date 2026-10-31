@@ -1,4 +1,4 @@
-import { FileDown, FileSpreadsheet } from 'lucide-react-native';
+import { FileSpreadsheet, FileText, Share2 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -17,7 +17,7 @@ export default function ReportsScreen() {
   const t = useTheme();
   const months = useReportMonths();
   const groups = useGroups();
-  const { download, isBusy } = useDownloadReport();
+  const { download, share, isBusy } = useDownloadReport();
   const [open, setOpen] = useState<string | null>(null);
 
   const list = months.data && months.data.length > 0 ? months.data : [currentMonth()];
@@ -26,7 +26,7 @@ export default function ReportsScreen() {
     <Screen
       refreshing={months.isRefetching && !months.isLoading}
       onRefresh={() => months.refetch()}
-      header={<Header title="Reports" subtitle="A PDF or CSV for any month, shared through Android's share sheet." />}
+      header={<Header title="Reports" subtitle="Open a PDF or CSV for any month, or share it." />}
     >
       {months.isError ? (
         <ErrorState message={errorMessage(months.error)} onRetry={() => months.refetch()} />
@@ -51,7 +51,7 @@ export default function ReportsScreen() {
                       {expanded ? 'Choose what to download' : 'PDF · CSV'}
                     </Text>
                   </View>
-                  <Button title="PDF" size="sm" variant="secondary" icon={<FileDown size={16} color={t.colors.text} />} onPress={() => download(m, 'pdf')} loading={isBusy(m, 'pdf')} />
+                  <Button title="View PDF" size="sm" variant="secondary" icon={<FileText size={16} color={t.colors.text} />} onPress={() => download(m, 'pdf')} loading={isBusy(m, 'pdf')} />
                 </Pressable>
                 {expanded ? (
                   <View style={styles.expanded}>
@@ -59,15 +59,15 @@ export default function ReportsScreen() {
                     <Text variant="micro" tone="muted" weight="semibold" style={styles.caps}>
                       PDF
                     </Text>
-                    <DownloadRow label="Everything" sub="All groups + personal" busy={isBusy(m, 'pdf')} onPress={() => download(m, 'pdf')} />
-                    <DownloadRow label="Personal only" busy={isBusy(m, 'pdf', 'personal')} onPress={() => download(m, 'pdf', 'personal')} />
+                    <DownloadRow label="Everything" sub="All groups + personal" busy={isBusy(m, 'pdf')} onPress={() => download(m, 'pdf')} onShare={() => share(m, 'pdf')} />
+                    <DownloadRow label="Personal only" busy={isBusy(m, 'pdf', 'personal')} onPress={() => download(m, 'pdf', 'personal')} onShare={() => share(m, 'pdf', 'personal')} />
                     {(groups.data ?? []).map((g) => (
-                      <DownloadRow key={g.id} label={`${g.emoji} ${g.name}`} busy={isBusy(m, 'pdf', g.id)} onPress={() => download(m, 'pdf', g.id)} />
+                      <DownloadRow key={g.id} label={`${g.emoji} ${g.name}`} busy={isBusy(m, 'pdf', g.id)} onPress={() => download(m, 'pdf', g.id)} onShare={() => share(m, 'pdf', g.id)} />
                     ))}
                     <Text variant="micro" tone="muted" weight="semibold" style={[styles.caps, { marginTop: 10 }]}>
                       CSV
                     </Text>
-                    <DownloadRow label="Every expense line" sub="Opens in Excel / Sheets" icon="csv" busy={isBusy(m, 'csv')} onPress={() => download(m, 'csv')} />
+                    <DownloadRow label="Every expense line" sub="Opens in Excel / Sheets" icon="csv" busy={isBusy(m, 'csv')} onPress={() => download(m, 'csv')} onShare={() => share(m, 'csv')} />
                   </View>
                 ) : null}
               </Card>
@@ -79,23 +79,42 @@ export default function ReportsScreen() {
   );
 }
 
-function DownloadRow({ label, sub, onPress, busy, icon = 'pdf' }: { label: string; sub?: string; onPress: () => void; busy: boolean; icon?: 'pdf' | 'csv' }) {
+function DownloadRow({
+  label,
+  sub,
+  onPress,
+  onShare,
+  busy,
+  icon = 'pdf',
+}: {
+  label: string;
+  sub?: string;
+  onPress: () => void;
+  onShare: () => void;
+  busy: boolean;
+  icon?: 'pdf' | 'csv';
+}) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} disabled={busy} style={({ pressed }) => [styles.dlRow, pressed && { opacity: 0.7 }]}>
-      {icon === 'csv' ? <FileSpreadsheet size={18} color={t.colors.accent} /> : <FileDown size={18} color={t.colors.accent} />}
-      <View style={{ flex: 1 }}>
-        <Text weight="medium">{label}</Text>
-        {sub ? (
-          <Text variant="micro" tone="muted">
-            {sub}
-          </Text>
-        ) : null}
-      </View>
-      <Text variant="small" tone="accent" weight="medium">
-        {busy ? 'Preparing…' : 'Download'}
-      </Text>
-    </Pressable>
+    <View style={styles.dlRow}>
+      <Pressable accessibilityRole="button" onPress={onPress} disabled={busy} style={({ pressed }) => [styles.dlMain, pressed && { opacity: 0.7 }]}>
+        {icon === 'csv' ? <FileSpreadsheet size={18} color={t.colors.accent} /> : <FileText size={18} color={t.colors.accent} />}
+        <View style={{ flex: 1 }}>
+          <Text weight="medium">{label}</Text>
+          {sub ? (
+            <Text variant="micro" tone="muted">
+              {sub}
+            </Text>
+          ) : null}
+        </View>
+        <Text variant="small" tone="accent" weight="medium">
+          {busy ? 'Preparing…' : 'Open'}
+        </Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Share ${label}`} onPress={onShare} hitSlop={8} style={({ pressed }) => [styles.shareBtn, { backgroundColor: t.colors.surface2 }, pressed && { opacity: 0.7 }]}>
+        <Share2 size={16} color={t.colors.text} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -103,5 +122,7 @@ const styles = StyleSheet.create({
   monthRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
   expanded: { paddingHorizontal: 16, paddingBottom: 12, gap: 2 },
   caps: { letterSpacing: 0.6, marginTop: 12, marginBottom: 4 },
-  dlRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  dlRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dlMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  shareBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
 });

@@ -24,10 +24,14 @@ groupSettlementsRouter.post('/', body(schemas.settlement), async (req, res) => {
   const { fromUserId, toUserId } = req.body
   if (fromUserId === toUserId) throw ApiError.badRequest('Payer and receiver must be different people.', 'toUserId')
   if (!isMember(group, fromUserId) || !isMember(group, toUserId)) throw ApiError.badRequest('Both people must be members of the group.', 'fromUserId')
+  const sourceRef = req.body.sourceRef || null
+  // The payer's SMS and the receiver's SMS carry the same UPI reference — record the payment once.
+  if (sourceRef && (await Settlement.exists({ groupId: group._id, sourceRef }))) throw ApiError.conflict('This payment is already recorded.')
   const actor = await requireUser(req.userId)
 
   const settlement = (
     await Settlement.create({
+      sourceRef,
       groupId: group._id,
       fromUserId: oid(fromUserId),
       toUserId: oid(toUserId),
@@ -91,8 +95,10 @@ const personalFields = (input) => ({
 })
 
 personalRouter.post('/', body(schemas.personal), async (req, res) => {
+  const sourceRef = req.body.sourceRef || null
+  if (sourceRef && (await PersonalExpense.exists({ userId: oid(req.userId), sourceRef }))) throw ApiError.conflict('This payment is already added.')
   const now = new Date()
-  const p = await PersonalExpense.create({ userId: oid(req.userId), ...personalFields(req.body), createdAt: now, updatedAt: now })
+  const p = await PersonalExpense.create({ userId: oid(req.userId), ...personalFields(req.body), sourceRef, createdAt: now, updatedAt: now })
   res.status(201).json(personalDto(p.toObject()))
 })
 

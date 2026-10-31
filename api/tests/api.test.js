@@ -502,3 +502,84 @@ describe('hardening', () => {
     expect(g.body.members.map((m) => m.name).sort()).toEqual(['Arun', 'Devi', 'Sathish Kumar'])
   })
 })
+
+
+describe('payment capture', () => {
+  it('dedupes captured payments by sourceRef and reports what is already recorded', async () => {
+    const { me, arun, priya, group } = await roomSetup()
+    const all = [me.id, arun.id, priya.id].map((userId) => ({ userId, value: 0 }))
+    const exp = { description: 'Annachi Store', amount: 250, category: 'groceries', date: day(7), paidBy: me.id, splitType: 'equal', splits: all, sourceRef: 'ref:430512345678' }
+    const created = await me.post(`/api/groups/${group.id}/expenses`, exp)
+    expect(created.status).toBe(201)
+    expect(created.body.sourceRef).toBe('ref:430512345678')
+    const again = await me.post(`/api/groups/${group.id}/expenses`, exp)
+    expect(again.status).toBe(409)
+
+    await me.post('/api/personal', { description: 'Tea', amount: 20, category: 'food', date: day(7), sourceRef: 'h:sms:HDFCBK:debit:20.00:29000000' }).expect(201)
+    await me.post('/api/personal', { description: 'Tea', amount: 20, category: 'food', date: day(7), sourceRef: 'h:sms:HDFCBK:debit:20.00:29000000' }).expect(409)
+
+    // Arun pays me back; his SMS and mine carry the same UPI ref → recorded once, whoever adds it first.
+    const st = { fromUserId: arun.id, toUserId: me.id, amount: 300, date: day(8), sourceRef: 'ref:430599990000' }
+    await arun.post(`/api/groups/${group.id}/settlements`, st).expect(201)
+    expect((await me.post(`/api/groups/${group.id}/settlements`, st)).status).toBe(409)
+
+    const m = await me.post('/api/capture/match', { keys: ['ref:430512345678', 'h:sms:HDFCBK:debit:20.00:29000000', 'ref:430599990000', 'ref:000000000000'] })
+    expect(m.status).toBe(200)
+    expect(m.body.recorded['ref:430512345678']).toMatchObject({ kind: 'expense', groupId: group.id })
+    expect(m.body.recorded['h:sms:HDFCBK:debit:20.00:29000000']).toMatchObject({ kind: 'personal', groupId: null })
+    expect(m.body.recorded['ref:430599990000']).toMatchObject({ kind: 'settlement' })
+    expect(m.body.recorded['ref:000000000000']).toBeUndefined()
+
+    // personal entries are private: Priya doesn't see my personal key
+    const pm = await priya.post('/api/capture/match', { keys: ['h:sms:HDFCBK:debit:20.00:29000000', 'ref:430512345678'] })
+    expect(pm.body.recorded['h:sms:HDFCBK:debit:20.00:29000000']).toBeUndefined()
+    expect(pm.body.recorded['ref:430512345678']).toBeDefined()
+
+    // editing keeps the sourceRef
+    const edited = await me.put(`/api/expenses/${created.body.id}`, { ...exp, sourceRef: undefined, description: 'Annachi Store veggies' })
+    expect(edited.status).toBe(200)
+    expect(edited.body.sourceRef).toBe('ref:430512345678')
+  })
+
+  it('stores filing rules per user and validates them against the group', async () => {
+    const { me, arun, priya, group } = await roomSetup()
+    const outsider = await signUp('Ravi', 'ravi@example.com')
+
+    const r1 = await me.put('/api/capture/rules', { key: 'Annachi@YBL', label: 'Annachi Store', kind: 'group', groupId: group.id, category: 'groceries', splitWith: [], autoSave: true })
+    expect(r1.status, JSON.stringify(r1.body)).toBe(200)
+    expect(r1.body).toMatchObject({ key: 'annachi@ybl', kind: 'group', groupId: group.id, category: 'groceries', autoSave: true, splitWith: [] })
+
+    // upsert by key
+    const r2 = await me.put('/api/capture/rules', { key: 'annachi@ybl', label: 'Annachi Store', kind: 'personal', category: 'groceries' })
+    expect(r2.body.id).toBe(r1.body.id)
+    expect(r2.body).toMatchObject({ kind: 'personal', groupId: null, autoSave: false })
+
+    await me.put('/api/capture/rules', { key: 'name:arun', label: 'Arun', kind: 'settlement', groupId: group.id, counterpartyUserId: arun.id }).expect(200)
+    await me.put('/api/capture/rules', { key: 'name:x', kind: 'settlement', groupId: group.id, counterpartyUserId: me.id }).expect(400)
+    await me.put('/api/capture/rules', { key: 'name:x', kind: 'group', groupId: group.id, splitWith: [outsider.id] }).expect(400)
+    await me.put('/api/capture/rules', { key: 'name:x', kind: 'group' }).expect(400)
+    await outsider.put('/api/capture/rules', { key: 'name:x', kind: 'group', groupId: group.id }).expect(403)
+
+    const list = await me.get('/api/capture/rules')
+    expect(list.body.map((r) => r.key).sort()).toEqual(['annachi@ybl', 'name:arun'])
+    expect((await priya.get('/api/capture/rules')).body).toEqual([])
+
+    await priya.del(`/api/capture/rules/${r1.body.id}`).expect(404)
+    await me.del(`/api/capture/rules/${r1.body.id}`).expect(204)
+    expect((await me.get('/api/capture/rules')).body).toHaveLength(1)
+  })
+
+  it('shares taught SMS formats without digits', async () => {
+    const me = await signUp('Sathish', 'sathish@example.com')
+    const other = await signUp('Arun', 'arun@example.com')
+    const t = { senderKey: 'goodbk', direction: 'debit', amountBefore: 'ALERT:', payeeBefore: 'payee:', payeeAfter: '|' }
+    const a = await me.post('/api/capture/templates', t)
+    expect(a.status, JSON.stringify(a.body)).toBe(201)
+    expect(a.body).toMatchObject({ senderKey: 'GOODBK', uses: 1 })
+    expect((await other.post('/api/capture/templates', t)).body.uses).toBe(2)
+    await me.post('/api/capture/templates', { ...t, amountBefore: 'Rs 250' }).expect(400)
+    await me.post('/api/capture/templates', { ...t, payeeBefore: 'a/c 1234' }).expect(400)
+    const list = await other.get('/api/capture/templates')
+    expect(list.body).toEqual([{ senderKey: 'GOODBK', direction: 'debit', amountBefore: 'ALERT:', payeeBefore: 'payee:', payeeAfter: '|', uses: 2 }])
+  })
+})

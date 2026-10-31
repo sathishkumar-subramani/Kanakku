@@ -163,6 +163,8 @@ export type Expense = {
   splits: Split[];
   /** my split amount (0 if not included) */
   myShare: number;
+  /** capture key when added from a bank SMS / payment notification */
+  sourceRef?: string | null;
   createdBy: string;
   createdAt: IsoTimestamp;
   updatedAt: IsoTimestamp;
@@ -179,6 +181,7 @@ export type ExpenseInput = {
   paidBy: string;
   splitType: SplitType;
   splits: SplitInput[];
+  sourceRef?: string;
 };
 
 export type ExpenseListQuery = {
@@ -211,6 +214,7 @@ export type SettlementInput = {
   amount: number;
   date?: DayString;
   note?: string;
+  sourceRef?: string;
 };
 
 // ---------- Personal ----------
@@ -232,7 +236,32 @@ export type PersonalExpenseInput = {
   category: Category;
   date: DayString;
   notes?: string;
+  sourceRef?: string;
 };
+
+// ---------- Payment capture ----------
+
+export type CaptureRuleKind = 'personal' | 'group' | 'settlement' | 'ignore';
+
+export type CaptureRule = {
+  id: string;
+  /** lower-cased VPA, or "name:<normalised payee>" */
+  key: string;
+  label: string;
+  kind: CaptureRuleKind;
+  groupId: string | null;
+  category: Category | null;
+  description: string | null;
+  /** group rules: empty = everyone in the group */
+  splitWith: string[];
+  counterpartyUserId: string | null;
+  autoSave: boolean;
+  updatedAt: IsoTimestamp;
+};
+
+export type CaptureRuleInput = Omit<CaptureRule, 'id' | 'updatedAt'>;
+
+export type RecordedRef = { kind: 'personal' | 'expense' | 'settlement'; id: string; groupId: string | null };
 
 // ---------- Dashboard ----------
 

@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { ChevronRight, FileText, KeyRound, LogOut, Moon, Palette, UserRound } from 'lucide-react-native';
+import { ChevronRight, FileText, KeyRound, LogOut, Moon, Palette, UserRound, Zap } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
@@ -116,6 +116,8 @@ export default function MoreScreen() {
         <Row icon={<KeyRound size={18} color={t.colors.accent} />} title="Change password" onPress={() => router.push('/more/password')} />
         <Divider inset={56} />
         <Row icon={<FileText size={18} color={t.colors.accent} />} title="Reports" value="PDF and CSV by month" onPress={() => router.push('/more/reports')} />
+        <Divider inset={56} />
+        <Row icon={<Zap size={18} color={t.colors.accent} />} title="Auto-add payments" value="Bank SMS · GPay · PhonePe · Paytm" onPress={() => router.push('/more/capture')} />
       </Card>
 
       <Card padded={false} style={styles.card}>

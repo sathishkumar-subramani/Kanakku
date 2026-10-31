@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { FileDown } from 'lucide-react-native';
+import { FileText, Share2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -7,6 +7,7 @@ import { errorMessage } from '@/api';
 import { useDashboard, useMe } from '@/api/queries';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { CaptureBanner } from '@/components/CaptureBanner';
 import { Card, Divider, SectionTitle } from '@/components/Card';
 import { CategoryDonut, DailyBars, GroupBars } from '@/components/Charts';
 import { ExpenseRow } from '@/components/ListItems';
@@ -31,7 +32,7 @@ export default function HomeScreen() {
   const wakingUp = useAuthStore((s) => s.wakingUp);
   const currency = user?.currency ?? 'INR';
   const dash = useDashboard(month);
-  const { download, isBusy } = useDownloadReport();
+  const { download, share, isBusy } = useDownloadReport();
 
   const d = dash.data;
   const isThisMonth = month === currentMonth();
@@ -61,6 +62,7 @@ export default function HomeScreen() {
       <View style={styles.monthRow}>
         <MonthPicker value={month} onChange={setMonth} />
       </View>
+      {isThisMonth ? <CaptureBanner /> : null}
 
       {dash.isError ? (
         <ErrorState message={errorMessage(dash.error)} onRetry={() => dash.refetch()} />
@@ -171,15 +173,23 @@ export default function HomeScreen() {
             </>
           )}
 
-          <Button
-            title={`Download PDF · ${formatMonthLabel(month)}`}
-            variant="secondary"
-            icon={<FileDown size={18} color={t.colors.text} />}
-            onPress={() => download(month, 'pdf')}
-            loading={isBusy(month, 'pdf')}
-            fullWidth
-            style={{ marginTop: 4 }}
-          />
+          <View style={styles.pdfRow}>
+            <Button
+              title={`View PDF · ${formatMonthLabel(month)}`}
+              variant="secondary"
+              icon={<FileText size={18} color={t.colors.text} />}
+              onPress={() => download(month, 'pdf')}
+              loading={isBusy(month, 'pdf')}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Share"
+              variant="secondary"
+              icon={<Share2 size={18} color={t.colors.text} />}
+              onPress={() => share(month, 'pdf')}
+              loading={isBusy(month, 'pdf', undefined, 'share')}
+            />
+          </View>
           <Text variant="micro" tone="muted" center style={{ marginTop: 8 }}>
             Everything this month: groups and personal, with balances.
           </Text>
@@ -225,6 +235,7 @@ function capitalize(s: string): string {
 }
 
 const styles = StyleSheet.create({
+  pdfRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   monthRow: { marginBottom: 14, marginTop: 4 },
   tiles: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   tile: { flex: 1, gap: 10, paddingVertical: 14 },
